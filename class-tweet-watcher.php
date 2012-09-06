@@ -41,6 +41,13 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	public $oauth;
 	
 	/**
+	 * An array of error messages for the user
+	 * 
+	 * @var type array
+	 */
+	public $errors;
+	
+	/**
 	 * Let's go!
 	 *
 	 * @return void
@@ -55,8 +62,10 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 		$this->add_action( 'load-settings_page_twtwchr_auth', 'load_settings' );
 		$this->add_filter( 'cron_schedules' );
 		$this->add_action( 'twtwchr_queue_mentions', 'queue_new_mentions' );
+		$this->add_action( 'admin_notices' );
 
 		$this->version = 2;
+		$this->errors = array();
 	}
 	
 	// HOOKS
@@ -88,9 +97,16 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	public function admin_menu() {
 		add_options_page( 'Tweet Watcher – Twitter Auth', 'Tweet Watcher Auth', 'manage_options', 'twtwchr_auth', array( $this, 'settings' ) );
 	}
+
+	public function admin_notices() {
+		if ( ! $this->errors )
+			return;
+		foreach ( $this->errors as & $error_msg )
+			printf( '<div class="error"><p>%s</p></div>', $error_msg );
+	}	
 	
 	public function cron_schedules( $schedules ) {
-		$schedules[ 'twtwchr_check_interval' ] = array( 'interval' => 60 * 5, 'display' => 'Tweet Watcher: every five minutes' );
+		$schedules[ 'twtwchr_check_interval' ] = array( 'interval' => 60 * 5, 'display' => __( 'Tweet Watcher: every five minutes', 'twtwchr' ) );
 		return $schedules;
 	}
 
@@ -102,7 +118,11 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 			exit;
 		} elseif ( isset( $_GET[ 'twtwchr_authenticate' ] ) ) {
 			$this->oauth->delete_all_properties();
-			$this->oauth->acquire_request_token();
+			$response = $this->oauth->acquire_request_token();
+			if ( is_wp_error( $response ) ) {
+				$this->errors[] = $response->get_error_message();
+				return;
+			}
 			$this->oauth->redirect_user_to_authenticate();
 		} elseif ( $this->oauth->is_authentication_response() ) {
 			$this->oauth->process_request_token_response();
