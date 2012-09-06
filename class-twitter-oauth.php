@@ -1,7 +1,7 @@
 <?php
 
 // Heavy hat-tip to the BraveNewCode guys for their Twitter oAuth implementation
-// for 
+// from WordTwit, which I've worked from for the below code.
 
 class TwtWchrOAuth {
 
@@ -47,8 +47,6 @@ class TwtWchrOAuth {
 //		return json_decode( wp_remote_retrieve_body( $response ) );
 	}
 	
-//	
-	
 	function verify_oauth_response() {
 		$oauth_verifier = isset( $_GET[ 'oauth_verifier' ] ) ? $_GET[ 'oauth_verifier' ] : false;
 		$oauth_token = isset( $_GET[ 'oauth_token' ] ) ? $_GET[ 'oauth_token' ] : false;
@@ -59,8 +57,6 @@ class TwtWchrOAuth {
 	function acquire_request_token() {
 		$params = array();
 		
-		error_log( 'TwtrSckr: In function get_request_token' );
-		
 		$params['oauth_callback'] = admin_url( 'options-general.php?page=twtwchr_auth' );
 		$params['oauth_consumer_key'] = $this->oauth_consumer_key;
 		$params['oauth_nonce'] = $this->get_nonce();
@@ -69,8 +65,8 @@ class TwtWchrOAuth {
 		$params['oauth_version'] = '1.0';
 		
 		$response = $this->do_oauth( 'http://api.twitter.com/oauth/request_token', 'POST', $params );
-		if (is_wp_error( $response_vars ) )
-			return $response_vars;
+		if (is_wp_error( $response ) )
+			return $response;
 
 		parse_str( wp_remote_retrieve_body( $response ), $response_vars );
 
@@ -147,8 +143,9 @@ class TwtWchrOAuth {
 	
 	function do_oauth( $url, $method, $params, $vars = array(), $token_secret = '' ) {
 
-		$sig_string = $this->create_signature_base_string( $method, $url, array_merge( $params, $vars ) );
-		$hash = hash_hmac( 'sha1', $this->oauth_consumer_secret . '&' . $token_secret, $sig_string, true );
+		$key = $this->create_signature_base_string( $method, $url, array_merge( $params, $vars ) );
+		$data = $this->oauth_consumer_secret . '&' . $token_secret;
+		$hash = hash_hmac( 'sha1', $key, $data, true );
 		$sig = base64_encode( $hash );
 		$params['oauth_signature'] = $sig;
 		
