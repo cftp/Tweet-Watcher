@@ -111,13 +111,19 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	}
 
 	public function load_settings() {
+		wp_enqueue_style( 'twtwchr-admin', $this->url( '/css/admin.css' ), array(), $this->version );
 		$this->init_oauth();
 		if ( isset( $_GET[ 'twtwchr_unauthenticate' ] ) ) {
-			$this->oauth->delete_all_properties();
-			wp_redirect( admin_url( 'options-general.php?page=twtwchr_auth' ) );
+			$user_id = absint( $_GET[ 'user_id' ] );
+			check_admin_referer( "twtwchr_unauth_$user_id" );
+			$user = $this->get_user( $user_id );
+			$this->oauth->delete_user( $user_id );
+			$this->set_admin_notice( printf( __( 'The user @%s has been unauthenticated and their tweets are no longer being watched.', 'twtwchr' ), $user[ 'screen_name' ] ) );
+			wp_redirect( admin_url( 'options-general.php?page=twtwchr_auth&twtwchr_user_deleted=1' ) );
 			exit;
 		} elseif ( isset( $_GET[ 'twtwchr_authenticate' ] ) ) {
-			$this->oauth->delete_all_properties();
+			check_admin_referer( 'twtwchr_auth' );
+			$this->oauth->delete_auth_properties();
 			$response = $this->oauth->acquire_request_token();
 			if ( is_wp_error( $response ) ) {
 				$this->errors[] = $response->get_error_message();
@@ -156,14 +162,9 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	// =========
 	
 	public function settings() {
-		if ( ! $this->oauth->is_authenticated() ) {
-			$vars = array();
-			$this->render_admin( 'settings-not-authenticated.php', $vars );
-		} else {
-			$vars = array();
-			$vars[ 'screen_name' ] = $this->oauth->get_property( 'screen_name' );
-			$this->render_admin( 'settings-authenticated.php', $vars );
-		}
+		$vars = array();
+		$vars[ 'users' ] = $this->oauth->get_users();
+		$this->render_admin( 'settings.php', $vars );
 	}
 
 	// UTILITIES

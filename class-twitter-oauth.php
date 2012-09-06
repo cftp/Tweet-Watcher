@@ -9,10 +9,6 @@ class TwtWchrOAuth {
 	public $oauth_consumer_key    = 'qGU1kXbHftYsGylWCBMOA';
 	public $oauth_time_offset = 0;
 	
-	function is_authenticated() {
-		return $this->get_property( 'authenticated', false );
-	}
-	
 	function is_authentication_response() {
 		return isset( $_GET[ 'oauth_token' ] );
 	}
@@ -95,8 +91,8 @@ class TwtWchrOAuth {
 		
 		parse_str( wp_remote_retrieve_body( $response ), $response_vars );
 		
-		$this->set_properties( $response_vars );
-		$this->set_property( 'authenticated', true );
+		$this->set_user( $response_vars[ 'screen_name' ], $response_vars[ 'user_id' ], $response_vars[ 'oauth_token' ], $response_vars[ 'oauth_token_secret' ] );
+		$this->delete_auth_properties();
 		return true;
 	}
 	
@@ -191,7 +187,32 @@ class TwtWchrOAuth {
 		);
 		return add_query_arg( $args, 'http://api.twitter.com/oauth/authorize' );
 	}
- 	
+	
+	function set_user( $screen_name, $user_id, $oauth_token, $oauth_token_secret ) {
+		$users = $this->get_property( 'users', array() );
+		$users[ $user_id ] = compact( 'screen_name', 'oauth_token', 'oauth_token_secret' );
+		$users = $this->set_property( 'users', $users );
+	}
+	
+	function get_users() {
+		return $this->get_property( 'users', array() );
+	}
+	
+	function delete_user( $user_id ) {
+		$users = $this->get_property( 'users', array() );
+		unset( $users[ $user_id ] );
+		$users = $this->set_property( 'users', $users );
+	}
+
+	function delete_auth_properties() {
+		// @TODO: Should the auth properties be stored on the user?
+		// @TODO: Is it a security issue that someone could swoop in mid authentication somehow?
+		$this->delete_property( 'authenticated' );
+		$this->delete_property( 'oauth_token' );
+		$this->delete_property( 'oauth_token_secret' );
+		$this->delete_property( 'oauth_verifier' );
+	}
+	
 	function set_property( $name, $value ) {
 		$vars = get_option( 'twtwchr_oauth', array() );
 		$vars[ $name ] = $value;
