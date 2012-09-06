@@ -1,9 +1,13 @@
 <?php
 
-class TwtrWchrOAuth {
+// Heavy hat-tip to the BraveNewCode guys for their Twitter oAuth implementation
+// for 
+
+class TwtWchrOAuth {
 
 	public $oauth_consumer_secret = 'qknwmXYtIL8OHeopqylxD2ZHyJElLE1Wf6E0OWDLh4';
 	public $oauth_consumer_key    = 'qGU1kXbHftYsGylWCBMOA';
+	public $oauth_time_offset = 0;
 	
 	function is_authenticated() {
 		return $this->get_property( 'authenticated', false );
@@ -57,7 +61,7 @@ class TwtrWchrOAuth {
 		
 		error_log( 'TwtrSckr: In function get_request_token' );
 		
-		$params['oauth_callback'] = admin_url( 'options-general.php?page=twtrwchr_auth' );
+		$params['oauth_callback'] = admin_url( 'options-general.php?page=twtwchr_auth' );
 		$params['oauth_consumer_key'] = $this->oauth_consumer_key;
 		$params['oauth_nonce'] = $this->get_nonce();
 		$params['oauth_signature_method'] = 'HMAC-SHA1';
@@ -141,14 +145,10 @@ class TwtrWchrOAuth {
 		return md5( mt_rand() + mt_rand() );	
 	}
 	
-	function hmac_sha1( $key, $data ) {
-		return hash_hmac( 'sha1', $data, $key, true );	
-	}
-	
 	function do_oauth( $url, $method, $params, $vars = array(), $token_secret = '' ) {
 
 		$sig_string = $this->create_signature_base_string( $method, $url, array_merge( $params, $vars ) );
-		$hash = $this->hmac_sha1( $this->oauth_consumer_secret . '&' . $token_secret, $sig_string );
+		$hash = hash_hmac( 'sha1', $this->oauth_consumer_secret . '&' . $token_secret, $sig_string, true );
 		$sig = base64_encode( $hash );
 		$params['oauth_signature'] = $sig;
 		
@@ -184,7 +184,7 @@ class TwtrWchrOAuth {
 		if ( 200 == wp_remote_retrieve_response_code( $response ) )
 			return $response;
 
-		return new WP_Error( 'twtrwchr_twitter_error', __( 'Twitter returned an error, please try again. (Error 103)', 'twtrwchr' ), $response );
+		return new WP_Error( 'twtwchr_twitter_error', __( 'Twitter returned an error, please try again. (Error 103)', 'twtwchr' ), $response );
 	}
 	
 	function get_auth_url( $token ) {
@@ -196,33 +196,33 @@ class TwtrWchrOAuth {
 	}
  	
 	function set_property( $name, $value ) {
-		$vars = get_option( 'twtrwchr_oauth', array() );
+		$vars = get_option( 'twtwchr_oauth', array() );
 		$vars[ $name ] = $value;
-		update_option( 'twtrwchr_oauth', $vars );
+		update_option( 'twtwchr_oauth', $vars );
 	}
  	
 	function delete_property( $name ) {
-		$vars = get_option( 'twtrwchr_oauth', array() );
+		$vars = get_option( 'twtwchr_oauth', array() );
 		unset( $vars[ $name ] );
-		update_option( 'twtrwchr_oauth', $vars );
+		update_option( 'twtwchr_oauth', $vars );
 	}
 	
 	function set_properties( $values ) {
-		$vars = array_merge( get_option( 'twtrwchr_oauth', array() ), $values );
-		update_option( 'twtrwchr_oauth', $vars );
+		$vars = array_merge( get_option( 'twtwchr_oauth', array() ), $values );
+		update_option( 'twtwchr_oauth', $vars );
 	}
 
 	function get_property( $name, $default_value = false ) {
-		$vars = get_option( 'twtrwchr_oauth', array() );
+		$vars = get_option( 'twtwchr_oauth', array() );
 		return isset( $vars[ $name ] ) ? $vars[ $name ] : $default_value;
 	}
 
 	function get_properties() {
-		return get_option( 'twtrwchr_oauth', array() );
+		return get_option( 'twtwchr_oauth', array() );
 	}
 	
 	function delete_all_properties() {
-		delete_option( 'twtrwchr_oauth' );
+		delete_option( 'twtwchr_oauth' );
 	}
 	
 }

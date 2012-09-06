@@ -19,12 +19,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 /**
- * Twitter Watcher central command and control.
+ * Tweet Watcher central command and control.
  *
- * @package Twitter Watcher
+ * @package Tweet Watcher
  * @since 0.1
  */
-class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
+class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	
 	/**
 	 * A version for cache busting, DB updates, etc.
@@ -46,15 +46,15 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 	 * @return void
 	 **/
 	public function __construct() {
-		$this->setup( 'twitter-watcher', 'plugin' );
+		$this->setup( 'tweet-watcher', 'plugin' );
 		$this->register_activation( cftp_tweet_watcher_file() );
 		$this->register_deactivation( cftp_tweet_watcher_file() );
 
 		$this->add_action( 'admin_init' );
 		$this->add_action( 'admin_menu' );
-		$this->add_action( 'load-settings_page_twtrwchr_auth', 'load_settings' );
+		$this->add_action( 'load-settings_page_twtwchr_auth', 'load_settings' );
 		$this->add_filter( 'cron_schedules' );
-		$this->add_action( 'twtrwchr_queue_mentions', 'queue_new_mentions' );
+		$this->add_action( 'twtwchr_queue_mentions', 'queue_new_mentions' );
 
 		$this->version = 2;
 	}
@@ -63,12 +63,12 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 	// =====
 	
 	public function activate() {
-		wp_schedule_event( time(), 'twtrwchr_check_interval', 'twtrwchr_queue_mentions' );
+		wp_schedule_event( time(), 'twtwchr_check_interval', 'twtwchr_queue_mentions' );
 	}
 	
 	public function deactivate() {
 		error_log( "Tweet Watcher deactivate" );
-		wp_clear_scheduled_hook( 'twtrwchr_queue_mentions' );
+		wp_clear_scheduled_hook( 'twtwchr_queue_mentions' );
 		$this->init_oauth();
 		$this->oauth->delete_all_properties();
 	}
@@ -80,27 +80,27 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 		// Handy couple of lines to reset all the tweet collection
 //		$this->init_oauth();
 //		$this->oauth->delete_property( 'last_mention_id' );
-//		delete_option( 'twtrwchr_queued_mentions' );
+//		delete_option( 'twtwchr_queued_mentions' );
 //		var_dump( "Done" );
 //		exit;
 	}
 	
 	public function admin_menu() {
-		add_options_page( 'Twitter Watcher Auth', 'Twitter Watcher Auth', 'manage_options', 'twtrwchr_auth', array( $this, 'settings' ) );
+		add_options_page( 'Tweet Watcher – Twitter Auth', 'Tweet Watcher Auth', 'manage_options', 'twtwchr_auth', array( $this, 'settings' ) );
 	}
 	
 	public function cron_schedules( $schedules ) {
-		$schedules[ 'twtrwchr_check_interval' ] = array( 'interval' => 60 * 5, 'display' => 'Tweet Watcher: every five minutes' );
+		$schedules[ 'twtwchr_check_interval' ] = array( 'interval' => 60 * 5, 'display' => 'Tweet Watcher: every five minutes' );
 		return $schedules;
 	}
 
 	public function load_settings() {
 		$this->init_oauth();
-		if ( isset( $_GET[ 'twtrwchr_unauthenticate' ] ) ) {
+		if ( isset( $_GET[ 'twtwchr_unauthenticate' ] ) ) {
 			$this->oauth->delete_all_properties();
-			wp_redirect( admin_url( 'options-general.php?page=twtrwchr_auth' ) );
+			wp_redirect( admin_url( 'options-general.php?page=twtwchr_auth' ) );
 			exit;
-		} elseif ( isset( $_GET[ 'twtrwchr_authenticate' ] ) ) {
+		} elseif ( isset( $_GET[ 'twtwchr_authenticate' ] ) ) {
 			$this->oauth->delete_all_properties();
 			$this->oauth->acquire_request_token();
 			$this->oauth->redirect_user_to_authenticate();
@@ -108,7 +108,7 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 			$this->oauth->process_request_token_response();
 			$this->oauth->acquire_access_token();
 			// We are now all auth'd up
-			wp_redirect( admin_url( 'options-general.php?page=twtrwchr_auth' ) );
+			wp_redirect( admin_url( 'options-general.php?page=twtwchr_auth' ) );
 			exit;
 		}
 	}
@@ -121,11 +121,11 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 			$args[ 'since_id' ] = $last_mention_id;
 		}
 		if ( $mentions = $this->oauth->get_mentions( $args ) ) {
-			$queued_mentions = get_option( 'twtrwchr_queued_mentions', array() );
+			$queued_mentions = get_option( 'twtwchr_queued_mentions', array() );
 			foreach ( $mentions as & $mention ) {
 				array_unshift( $queued_mentions, $mention );
 			}
-			update_option( 'twtrwchr_queued_mentions', $queued_mentions );
+			update_option( 'twtwchr_queued_mentions', $queued_mentions );
 			$last_mention = array_shift( $mentions );
 			$this->oauth->set_property( 'last_mention_id', $last_mention->id_str );
 		}
@@ -153,7 +153,7 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 		// Try to give outselves a 4 minute execution time to play with,
 		// bearing in mind that the Cron job is every four minutes.
 		set_time_limit( 4*60 );
-		while( $queued_mentions = get_option( 'twtrwchr_queued_mentions', array() ) )
+		while( $queued_mentions = get_option( 'twtwchr_queued_mentions', array() ) )
 			$this->process_next_mention( $queued_mentions );
 
 		$this->oauth->delete_property( 'last_mention_id' );
@@ -164,15 +164,15 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 		$hashtag_regex = '/(^|\s)#(\w*[a-zA-Z_]+\w*)/';
 		preg_match_all( $hashtag_regex, $message, $preg_output );
 		$hash_tags = $preg_output[ 2 ];
-		do_action( 'twtrwchr_mention', $mention, $mention->id_str, $hash_tags );
-		update_option( 'twtrwchr_queued_mentions', $queued_mentions );
+		do_action( 'twtwchr_mention', $mention, $mention->id_str, $hash_tags );
+		update_option( 'twtwchr_queued_mentions', $queued_mentions );
 	}
 	
 	public function init_oauth() {
-		if ( is_a( $this->oauth, 'TwtrWchrOAuth') )
+		if ( is_a( $this->oauth, 'TwtWchrOAuth') )
 			return;
 		require_once( 'class-twitter-oauth.php' );
-		$this->oauth = new TwtrWchrOAuth;
+		$this->oauth = new TwtWchrOAuth;
 	}
 	
 	/**
@@ -183,7 +183,7 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 	 **/
 	function maybe_upgrade() {
 		global $wpdb;
-		$option_name = 'twtrwchr_version';
+		$option_name = 'twtwchr_version';
 		$version = get_option( $option_name, 0 );
 
 		if ( $version == $this->version )
@@ -194,28 +194,27 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 			$time_diff = time() - $start_time;
 			// Check the lock is less than 30 mins old, and if it is, bail
 			if ( $time_diff < ( 60 * 30 ) ) {
-				error_log( "Twitter Watcher: Existing update routine has been running for less than 30 minutes" );
+				error_log( "Tweet Watcher: Existing update routine has been running for less than 30 minutes" );
 				return;
 			}
-			error_log( "Twitter Watcher: Update routine is running, but older than 30 minutes; going ahead regardless" );
+			error_log( "Tweet Watcher: Update routine is running, but older than 30 minutes; going ahead regardless" );
 		} else {
 			update_option( "{$option_name}_running", time(), null, 'no' );
 		}
 
 		if ( $version < 2 ) {
-			wp_clear_scheduled_hook( 'twtrwchr_queue_mentions' );
-			wp_schedule_event( time(), 'twtrwchr_check_interval', 'twtrwchr_queue_mentions' );
-			error_log( "Twitter Watcher: Setup cron job." );
+			wp_clear_scheduled_hook( 'twtwchr_queue_mentions' );
+			wp_schedule_event( time(), 'twtwchr_check_interval', 'twtwchr_queue_mentions' );
+			error_log( "Tweet Watcher: Setup cron job." );
 		}
 
 		update_option( $option_name, $this->version );
 		delete_option( "{$option_name}_running", true, null, 'no' );
-		error_log( "Twitter Watcher: Done upgrade" );
+		error_log( "Tweet Watcher: Done upgrade" );
 	}
 
 	
 }
 
-global $cftp_twitter_watcher;
-$cftp_twitter_watcher = new CFTP_Twitter_Watcher;
+$GLOBALS[ 'cftp_tweet_watcher' ] = new CFTP_Tweet_Watcher;
 

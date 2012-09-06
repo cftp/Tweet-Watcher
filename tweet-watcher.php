@@ -1,8 +1,8 @@
 <?php
 
 /*
-Plugin Name: Twitter Watcher
-Plugin URI: http://codeforthepeople.com/wordpress-plugins/twitter-watcher
+Plugin Name: Tweet Watcher
+Plugin URI: https://github.com/simonwheatley/Tweet-Watcher/
 Description: Authenticates with a Twitter account and watches it's mention stream, firing actions for each mention.
 Version: 0.1
 Author: Simon Wheatley
@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
 require_once( 'class-plugin.php' );
-require_once( 'class-twitter-watcher.php' );
+require_once( 'class-tweet-watcher.php' );
 
 function cftp_tweet_watcher_file() {
 	return __FILE__;

@@ -63,7 +63,7 @@
  * @author Simon Wheatley
  * @copyright Copyright (C) Code for the People Ltd (except where noted)
  **/
-class CFTP_Twitter_Watcher_Plugin {
+class CFTP_Tweet_Watcher_Plugin {
 
 	/**
 	 * The name of this plugin
@@ -737,5 +737,5 @@ class CFTP_Twitter_Watcher_Plugin {
 		return $id;
 	}
 
-} // END CFTP_Twitter_Watcher_Plugin class 
+} // END CFTP_Tweet_Watcher_Plugin class 
 
