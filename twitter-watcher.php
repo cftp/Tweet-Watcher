@@ -38,7 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 require_once( 'class-plugin.php' );
 require_once( 'class-twitter-watcher.php' );
 
-function cftp_twitter_watcher_file() {
+function cftp_tweet_watcher_file() {
 	return __FILE__;
 }
 

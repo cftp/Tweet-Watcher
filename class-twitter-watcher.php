@@ -47,8 +47,8 @@ class CFTP_Twitter_Watcher extends CFTP_Twitter_Watcher_Plugin {
 	 **/
 	public function __construct() {
 		$this->setup( 'twitter-watcher', 'plugin' );
-		$this->register_activation( cftp_twitter_watcher_file() );
-		$this->register_deactivation( cftp_twitter_watcher_file() );
+		$this->register_activation( cftp_tweet_watcher_file() );
+		$this->register_deactivation( cftp_tweet_watcher_file() );
 
 		$this->add_action( 'admin_init' );
 		$this->add_action( 'admin_menu' );
