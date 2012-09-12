@@ -218,7 +218,7 @@ class TwtWchrOAuth {
 	}
 
 	function delete_auth_properties() {
-		// @TODO: Should the auth properties be stored on the user?
+		// @TODO: Should the auth properties be stored on the user for the current user?
 		// @TODO: Is it a security issue that someone could swoop in mid authentication somehow?
 		$this->delete_property( 'authenticated' );
 		$this->delete_property( 'oauth_token' );
