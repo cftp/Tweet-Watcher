@@ -5,7 +5,7 @@ Requires at least: 3.4.2
 Tested up to: 3.4.2
 Stable tag: 0.2
  
-Authenticates with a number of Twitter accounts and watches their mention stream, firing actions for each mention.
+A WordPress plugin which authenticates with a number of Twitter accounts and watches their mention stream, firing actions for each mention.
 
 == Description ==
 
