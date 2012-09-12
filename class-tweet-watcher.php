@@ -116,9 +116,9 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 		if ( isset( $_GET[ 'twtwchr_unauthenticate' ] ) ) {
 			$user_id = absint( $_GET[ 'user_id' ] );
 			check_admin_referer( "twtwchr_unauth_$user_id" );
-			$user = $this->get_user( $user_id );
+			$user = $this->oauth->get_user( $user_id );
 			$this->oauth->delete_user( $user_id );
-			$this->set_admin_notice( printf( __( 'The user @%s has been unauthenticated and their tweets are no longer being watched.', 'twtwchr' ), $user[ 'screen_name' ] ) );
+			$this->set_admin_notice( sprintf( __( 'The user @%s has been unauthenticated and their tweets are no longer being watched.', 'twtwchr' ), $user[ 'screen_name' ] ) );
 			wp_redirect( admin_url( 'options-general.php?page=twtwchr_auth&twtwchr_user_deleted=1' ) );
 			exit;
 		} elseif ( isset( $_GET[ 'twtwchr_authenticate' ] ) ) {
@@ -164,6 +164,13 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	public function settings() {
 		$vars = array();
 		$vars[ 'users' ] = $this->oauth->get_users();
+		foreach ( $vars[ 'users' ] as $user_id => & $user ) {
+			$unauth_args = array( 'twtwchr_unauthenticate' => 1, 'user_id' => $user_id );
+			$unauth_url = add_query_arg( $unauth_args );
+			$unauth_url = wp_nonce_url( $unauth_url, "twtwchr_unauth_$user_id" );
+			$user[ 'unauth_url' ] = $unauth_url;
+		}
+		$vars[ 'auth_url' ] = wp_nonce_url( add_query_arg( array( 'twtwchr_authenticate' => 1 ) ), 'twtwchr_auth' );
 		$this->render_admin( 'settings.php', $vars );
 	}
 

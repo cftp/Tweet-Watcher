@@ -194,6 +194,19 @@ class TwtWchrOAuth {
 		$users = $this->set_property( 'users', $users );
 	}
 	
+	/**
+	 * Return what Twitter info we have for the user_id requested.
+	 * 
+	 * @param int $user_id The Twitter ID of the user to get
+	 * @return array An array of Twitter user information
+	 */
+	function get_user( $user_id ) {
+		$users = $this->get_property( 'users', array() );
+		if ( ! isset( $users[ $user_id ] ) )
+			return false;
+		return $users[ $user_id ];
+	}
+	
 	function get_users() {
 		return $this->get_property( 'users', array() );
 	}

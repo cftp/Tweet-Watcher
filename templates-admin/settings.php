@@ -15,14 +15,14 @@
 			<?php foreach( $users as $user_id => & $user ) : ?>
 				<li>
 					<a href="http://twitter.com/<?php echo esc_attr( $user[ 'screen_name' ] ); ?>">@<?php echo esc_html( $user[ 'screen_name' ] ); ?></a>: 
-					<a href="<?php echo wp_nonce_url( add_query_arg( array( 'twtwchr_unauthenticate' => 1, 'user_id' => $user_id ), "twtwchr_unauth_$user_id" ) ); ?>" class="button">Unauthenticate</a>
+					<a href="<?php echo esc_url( $user[ 'unauth_url' ] ); ?>" class="button">Unauthenticate</a>
 				</li>
 			<?php endforeach; ?>
 		</ul>
 	
 	<?php endif; ?>
 		
-	<p class="twtwchr-auth"><a href="<?php echo wp_nonce_url( add_query_arg( array( 'twtwchr_authenticate' => 1 ) ), 'twtwchr_auth' ); ?>" class="button button-primary">Authenticate a new acccount</a></p>
+	<p class="twtwchr-auth"><a href="<?php echo esc_url( $auth_url ); ?>" class="button button-primary">Authenticate a new acccount</a></p>
 	
 </div>
 
