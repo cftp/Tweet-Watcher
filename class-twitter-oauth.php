@@ -13,7 +13,7 @@ class TwtWchrOAuth {
 		return isset( $_GET[ 'oauth_token' ] );
 	}
 	
-	function get_mentions( $user_id, $vars = array() ) {
+	function get_mentions( $user_id, $override_params = array() ) {
 		// http://api.twitter.com/1/statuses/mentions.json
 		
 		if ( ! $user = $this->get_user( $user_id ) )
@@ -26,26 +26,49 @@ class TwtWchrOAuth {
 		$params['oauth_timestamp'] = time() + $this->oauth_time_offset;
 		$params['oauth_token'] = $user[ 'oauth_token' ];
 		$params['oauth_version'] = '1.0';
+
+		$params = array_merge( $params, $override_params );
 		
-		$response = $this->do_oauth( 'https://api.twitter.com/1/statuses/mentions.json', 'GET', $params, $vars, $user[ 'oauth_token_secret' ] );
+		$response = $this->do_oauth( 'https://api.twitter.com/1/statuses/mentions.json', 'GET', $params, $user[ 'oauth_token_secret' ] );
 		return json_decode( wp_remote_retrieve_body( $response ) );
 	}
 	
-	function get_profile_image( $screen_name, $vars ) {
-		// https://api.twitter.com/1/users/profile_image
+	function get_tweets( $user_id, $override_params = array() ) {
+		// http://api.twitter.com/1/statuses/mentions.json
+		
+		if ( ! $user = $this->get_user( $user_id ) )
+			return new WP_Error( 'twtwchr_twitter_error', __( 'No user exists for that User ID. (Error 200)', 'twtwchr' ) );
+
 		$params = array();
+		$params['user_id'] = $user_id;
 		$params['oauth_consumer_key'] = $this->oauth_consumer_key;
 		$params['oauth_nonce'] = $this->get_nonce();
 		$params['oauth_signature_method'] = 'HMAC-SHA1';
 		$params['oauth_timestamp'] = time() + $this->oauth_time_offset;
-		$params['oauth_token'] = $this->get_property( 'oauth_token' );
+		$params['oauth_token'] = $user[ 'oauth_token' ];
 		$params['oauth_version'] = '1.0';
 		
-		$vars[ 'screen_name' ] = $screen_name;
-
-		$response = $this->do_oauth( 'https://api.twitter.com/1/users/profile_image', 'GET', $params, $vars, $this->get_property( 'oauth_token_secret' ) );
-//		return json_decode( wp_remote_retrieve_body( $response ) );
+		$params = array_merge( $params, $override_params );
+		
+		$response = $this->do_oauth( 'https://api.twitter.com/1/statuses/user_timeline.json', 'GET', $params, $user[ 'oauth_token_secret' ] );
+		return json_decode( wp_remote_retrieve_body( $response ) );
 	}
+	
+//	function get_profile_image( $screen_name, $vars ) {
+//		// https://api.twitter.com/1/users/profile_image
+//		$params = array();
+//		$params['oauth_consumer_key'] = $this->oauth_consumer_key;
+//		$params['oauth_nonce'] = $this->get_nonce();
+//		$params['oauth_signature_method'] = 'HMAC-SHA1';
+//		$params['oauth_timestamp'] = time() + $this->oauth_time_offset;
+//		$params['oauth_token'] = $this->get_property( 'oauth_token' );
+//		$params['oauth_version'] = '1.0';
+//		
+//		$vars[ 'screen_name' ] = $screen_name;
+//
+//		$response = $this->do_oauth( 'https://api.twitter.com/1/users/profile_image', 'GET', $params, $vars, $this->get_property( 'oauth_token_secret' ) );
+////		return json_decode( wp_remote_retrieve_body( $response ) );
+//	}
 	
 	function verify_oauth_response() {
 		$oauth_verifier = isset( $_GET[ 'oauth_verifier' ] ) ? $_GET[ 'oauth_verifier' ] : false;
@@ -86,12 +109,10 @@ class TwtWchrOAuth {
 		$params['oauth_signature_method'] = 'HMAC-SHA1';
 		$params['oauth_timestamp'] = time();
 		$params['oauth_token'] = $this->get_property( 'oauth_token' );
-		$params['oauth_verifier'] = $this->get_property( 'oauth_verifier' );
 		$params['oauth_version'] = '1.0';
+		$params['oauth_verifier'] = $this->get_property( 'oauth_verifier' );
 		
-		$post_vars = array( 'oauth_verifier' => $this->get_property( 'oauth_verifier' ) );
-		
-		$response = $this->do_oauth( 'http://api.twitter.com/oauth/access_token', 'POST', $params, $post_vars, $this->get_property( 'oauth_token_secret' ) );
+		$response = $this->do_oauth( 'http://api.twitter.com/oauth/access_token', 'POST', $params, $this->get_property( 'oauth_token_secret' ) );
 		
 		parse_str( wp_remote_retrieve_body( $response ), $response_vars );
 		
@@ -141,38 +162,38 @@ class TwtWchrOAuth {
 		return md5( mt_rand() + mt_rand() );	
 	}
 	
-	function do_oauth( $url, $method, $params = array(), $vars = array(), $token_secret = '' ) {
+	function do_oauth( $url, $method, $params = array(), $token_secret = '' ) {
 
-		$key = $this->create_signature_base_string( $method, $url, array_merge( $params, $vars ) );
+		$key = $this->create_signature_base_string( $method, $url, array_merge( $params ) );
 		$data = $this->oauth_consumer_secret . '&' . $token_secret;
 		$hash = hash_hmac( 'sha1', $key, $data, true );
 		$sig = base64_encode( $hash );
 		$params['oauth_signature'] = $sig;
 		
-		$header = "OAuth ";
-		$all_params = array();
+		$auth_header = "OAuth ";
+		$auth_params = array();
 		$other_params = array();
 		foreach( $params as $key => $value ) {
 			if ( strpos( $key, 'oauth_' ) !== false ) {
-				$all_params[] = $key . '="' . $this->encode( $value ) . '"';
+				$auth_params[] = $key . '="' . $this->encode( $value ) . '"';
 			} else {
 				$other_params[ $key ] = $value;	
 			}
 		}
 		
-		$header .= implode( $all_params, ", " );
+		$auth_header .= implode( $auth_params, ", " );
 
 		$args = array(
 			'headers' => array(
-				'Authorization' => $header,
+				'Authorization' => $auth_header,
 			),
 			'method' => $method,
 			'redirection' => 1,
 		);
 		if ( 'POST' == $method )
-			$args[ 'body' ] = $vars;
+			$args[ 'body' ] = $other_params;
 		else
-			$url = add_query_arg( $vars, $url );
+			$url = add_query_arg( $other_params, $url );
 		
 		$response = wp_remote_request( $url, $args );
 		$body = wp_remote_retrieve_body( $response );
