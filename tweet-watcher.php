@@ -4,7 +4,7 @@
 Plugin Name: Tweet Watcher
 Plugin URI: https://github.com/simonwheatley/Tweet-Watcher/
 Description: Authenticates with a Twitter account and watches it's mention stream, firing actions for each mention.
-Version: 0.1
+Version: 0.2
 Author: Simon Wheatley
 Author URI: http://codeforthepeople.com/
 */

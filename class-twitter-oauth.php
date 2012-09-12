@@ -13,17 +13,21 @@ class TwtWchrOAuth {
 		return isset( $_GET[ 'oauth_token' ] );
 	}
 	
-	function get_mentions( $vars = array() ) {
+	function get_mentions( $user_id, $vars = array() ) {
 		// http://api.twitter.com/1/statuses/mentions.json
+		
+		if ( ! $user = $this->get_user( $user_id ) )
+			return new WP_Error( 'twtwchr_twitter_error', __( 'No user exists for that User ID. (Error 200)', 'twtwchr' ) );
+
 		$params = array();
 		$params['oauth_consumer_key'] = $this->oauth_consumer_key;
 		$params['oauth_nonce'] = $this->get_nonce();
 		$params['oauth_signature_method'] = 'HMAC-SHA1';
 		$params['oauth_timestamp'] = time() + $this->oauth_time_offset;
-		$params['oauth_token'] = $this->get_property( 'oauth_token' );
+		$params['oauth_token'] = $user[ 'oauth_token' ];
 		$params['oauth_version'] = '1.0';
 		
-		$response = $this->do_oauth( 'https://api.twitter.com/1/statuses/mentions.json', 'GET', $params, $vars, $this->get_property( 'oauth_token_secret' ) );
+		$response = $this->do_oauth( 'https://api.twitter.com/1/statuses/mentions.json', 'GET', $params, $vars, $user[ 'oauth_token_secret' ] );
 		return json_decode( wp_remote_retrieve_body( $response ) );
 	}
 	
@@ -91,7 +95,7 @@ class TwtWchrOAuth {
 		
 		parse_str( wp_remote_retrieve_body( $response ), $response_vars );
 		
-		$this->set_user( $response_vars[ 'screen_name' ], $response_vars[ 'user_id' ], $response_vars[ 'oauth_token' ], $response_vars[ 'oauth_token_secret' ] );
+		$this->create_user( $response_vars[ 'screen_name' ], $response_vars[ 'user_id' ], $response_vars[ 'oauth_token' ], $response_vars[ 'oauth_token_secret' ] );
 		$this->delete_auth_properties();
 		return true;
 	}
@@ -137,7 +141,7 @@ class TwtWchrOAuth {
 		return md5( mt_rand() + mt_rand() );	
 	}
 	
-	function do_oauth( $url, $method, $params, $vars = array(), $token_secret = '' ) {
+	function do_oauth( $url, $method, $params = array(), $vars = array(), $token_secret = '' ) {
 
 		$key = $this->create_signature_base_string( $method, $url, array_merge( $params, $vars ) );
 		$data = $this->oauth_consumer_secret . '&' . $token_secret;
@@ -170,7 +174,6 @@ class TwtWchrOAuth {
 		else
 			$url = add_query_arg( $vars, $url );
 		
-		
 		$response = wp_remote_request( $url, $args );
 		$body = wp_remote_retrieve_body( $response );
 
@@ -188,9 +191,15 @@ class TwtWchrOAuth {
 		return add_query_arg( $args, 'http://api.twitter.com/oauth/authorize' );
 	}
 	
-	function set_user( $screen_name, $user_id, $oauth_token, $oauth_token_secret ) {
+	function create_user( $screen_name, $user_id, $oauth_token, $oauth_token_secret ) {
 		$users = $this->get_property( 'users', array() );
 		$users[ $user_id ] = compact( 'screen_name', 'oauth_token', 'oauth_token_secret' );
+		$users = $this->set_property( 'users', $users );
+	}
+	
+	function set_user_property( $user_id, $property, $value ) {
+		$users = $this->get_property( 'users', array() );
+		$users[ $user_id ][ $property ] = $value;
 		$users = $this->set_property( 'users', $users );
 	}
 	

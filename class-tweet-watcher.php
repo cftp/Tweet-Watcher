@@ -63,9 +63,25 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 		$this->add_filter( 'cron_schedules' );
 		$this->add_action( 'twtwchr_queue_mentions', 'queue_new_mentions' );
 		$this->add_action( 'admin_notices' );
+		
+		// For testing:
+//		$this->add_action( 'twtwchr_mention', 'mention', null, 6 );
 
 		$this->version = 2;
 		$this->errors = array();
+	}
+	
+	// TEST HOOKS
+	// ==========
+	
+	public function mention( $mention, $id_str, $is_protected, $hashtags, $user_mentions, $urls ) {
+		var_dump( $mention->html_text );
+		var_dump( $id_str );
+		var_dump( $is_protected );
+		var_dump( $hashtags );
+		var_dump( $user_mentions );
+		var_dump( $urls );
+		echo "<hr />";
 	}
 	
 	// HOOKS
@@ -85,7 +101,7 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	public function admin_init() {
 		$this->maybe_upgrade();
 		// A line to test queuing mentions on every admin page load
-//		$this->queue_new_mentions();
+		$this->queue_new_mentions();
 		// Handy couple of lines to reset all the tweet collection
 //		$this->init_oauth();
 //		$this->oauth->delete_property( 'last_mention_id' );
@@ -142,18 +158,23 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	public function queue_new_mentions() {
 		$this->init_oauth();
 
-		$args = array( 'include_entities' => 'true' );
-		if ( $last_mention_id = $this->oauth->get_property( 'last_mention_id' ) ) {
-			$args[ 'since_id' ] = $last_mention_id;
-		}
-		if ( $mentions = $this->oauth->get_mentions( $args ) ) {
-			$queued_mentions = get_option( 'twtwchr_queued_mentions', array() );
-			foreach ( $mentions as & $mention ) {
-				array_unshift( $queued_mentions, $mention );
+		if ( ! $users = $this->oauth->get_users() )
+			return;
+		
+		foreach ( $users as $user_id => & $user ) {
+			$args = array( 'include_entities' => 'true' );
+			if ( isset( $user[ 'last_mention_id' ] ) ) {
+				$args[ 'since_id' ] = $user[ 'last_mention_id' ];
 			}
-			update_option( 'twtwchr_queued_mentions', $queued_mentions );
-			$last_mention = array_shift( $mentions );
-			$this->oauth->set_property( 'last_mention_id', $last_mention->id_str );
+			if ( $mentions = $this->oauth->get_mentions( $user_id, $args ) ) {
+				$queued_mentions = get_option( 'twtwchr_queued_mentions', array() );
+				foreach ( $mentions as & $mention ) {
+					array_unshift( $queued_mentions, $mention );
+				}
+				update_option( 'twtwchr_queued_mentions', $queued_mentions );
+				$last_mention = array_shift( $mentions );
+				$this->oauth->set_user_property( $user_id, 'last_mention_id', $last_mention->id_str );
+			}
 		}
 		$this->process_mentions();
 	}
@@ -181,19 +202,57 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 		// Try to give outselves a 4 minute execution time to play with,
 		// bearing in mind that the Cron job is every four minutes.
 		set_time_limit( 4*60 );
-		while( $queued_mentions = get_option( 'twtwchr_queued_mentions', array() ) )
-			$this->process_next_mention( $queued_mentions );
-
-		$this->oauth->delete_property( 'last_mention_id' );
+		while( $queued_mentions = get_option( 'twtwchr_queued_mentions', array() ) ) {
+			$mention = array_pop( $queued_mentions );
+			$this->tweet_action( 'twtwchr_mention', $mention );
+			update_option( 'twtwchr_queued_mentions', $queued_mentions );
+		}
 	}
 	
-	public function process_next_mention( $queued_mentions ) {
-		$mention = array_pop( $queued_mentions );
-		$hashtag_regex = '/(^|\s)#(\w*[a-zA-Z_]+\w*)/';
-		preg_match_all( $hashtag_regex, $message, $preg_output );
-		$hash_tags = $preg_output[ 2 ];
-		do_action( 'twtwchr_mention', $mention, $mention->id_str, $hash_tags );
-		update_option( 'twtwchr_queued_mentions', $queued_mentions );
+	public function tweet_action( $action, $tweet ) {
+
+		$tweet->html_text = $tweet->text;
+		$is_protected = $tweet->user->protected;
+
+		$hashtags = wp_list_pluck( $tweet->entities->hashtags, 'text' );
+		
+		// Make links from the hashtags in the tweet text
+		$search = array();
+		$replace = array();
+		foreach ( $hashtags as & $s ) {
+			$hashtag = "#$s";
+			$args = array( 'q' => rawurlencode( $hashtag ) );
+			$hashtag_url = add_query_arg( $args, 'https://twitter.com/search/realtime/' );
+			$search[] = $hashtag;
+			$replace[] = '<a href="' . esc_url( $hashtag_url ) . '">' . esc_html( $hashtag ) . '</a>';
+		}
+		$tweet->html_text = str_replace( $search, $replace, $tweet->html_text );
+
+		$user_mentions = array();
+		foreach ( $tweet->entities->user_mentions as & $user_mention )
+			$user_mentions[ $user_mention->screen_name ] = $user_mention->name;
+		
+		// Make links from the user mentions in the tweet text
+		$search = array();
+		$replace = array();
+		foreach ( $user_mentions as $screen_name => $name ) {
+			$user = "@$screen_name";
+			$user_url = "https://twitter.com/$screen_name";
+			$search[] = $user;
+			$replace[] = '<a href="' . esc_url( $user_url ) . '" title="' . esc_attr( $name ) . '">' . esc_html( $user ) . '</a>';
+		}
+		$tweet->html_text = str_replace( $search, $replace, $tweet->html_text );
+
+		$urls = wp_list_pluck( $tweet->entities->urls, 'expanded_url' );
+		
+		// Make links from the URLs in the tweet text
+		$search = wp_list_pluck( $tweet->entities->urls, 'url' );
+		$replace = array();
+		foreach ( $tweet->entities->urls as & $url )
+			$replace[] = '<a href="' . esc_url( $url->expanded_url ) . '">' . esc_html( $url->display_url ) . '</a>';
+		$tweet->html_text = str_replace( $search, $replace, $tweet->html_text );
+
+		do_action( $action, $tweet, $tweet->id_str, $is_protected, $hashtags, $user_mentions, $urls );
 	}
 	
 	public function init_oauth() {
