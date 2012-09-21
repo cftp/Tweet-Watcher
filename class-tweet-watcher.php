@@ -67,7 +67,7 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 		
 		// For testing and demo purposes
 //		$this->add_action( 'twtwchr_mention', 'mention', null, 6 );
-		$this->add_action( 'twtwchr_tweet', 'tweet', null, 8 );
+//		$this->add_action( 'twtwchr_tweet', 'tweet', null, 8 );
 
 		$this->version = 3;
 		$this->errors = array();
@@ -158,6 +158,7 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 //		delete_option( 'twtwchr_queued_mentions' );
 //		var_dump( "Done" );
 //		exit;
+//		$this->queue_new_mentions();
 	}
 	
 	public function admin_menu() {
@@ -212,7 +213,7 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 			return;
 		
 		foreach ( $users as $user_id => & $user ) {
-			$args = array( 'include_entities' => 'true' );
+			$args = array( 'include_entities' => 'true', 'count' => 100 );
 			if ( isset( $user[ 'last_mention_id' ] ) ) {
 				$args[ 'since_id' ] = $user[ 'last_mention_id' ];
 			}
@@ -236,13 +237,12 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 			return;
 		
 		foreach ( $users as $user_id => & $user ) {
-			$args = array( 'include_entities' => 'true', 'include_rts' => 'true', 'contributor_details' => 'true' );
+			$args = array( 'include_entities' => 'true', 'include_rts' => 'true', 'contributor_details' => 'true', 'count' => 100 );
 			if ( isset( $user[ 'last_tweet_id' ] ) ) {
 				$args[ 'since_id' ] = $user[ 'last_tweet_id' ];
 			}
 			if ( $mentions = $this->oauth->get_tweets( $user_id, $args ) ) {
 				$queued_tweets = (array) get_option( 'twtwchr_queued_tweets', array() );
-				var_dump( $queued_tweets );
 				foreach ( $mentions as & $mention ) {
 					array_unshift( $queued_tweets, $mention );
 				}
@@ -323,6 +323,7 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 			do_action( 'twtwchr_mention', $tweet, $tweet->id_str, $is_protected, $hashtags, $user_mentions, $urls );
 
 			update_option( 'twtwchr_queued_mentions', $queued_mentions );
+			unset( $queued_mentions );
 		}
 	}
 	

@@ -3,7 +3,7 @@ Contributors: simonwheatley, cftp
 Tags: twitter, tweet
 Requires at least: 3.4.2
 Tested up to: 3.4.2
-Stable tag: 0.2
+Stable tag: 0.3
  
 A WordPress plugin which authenticates with a number of Twitter accounts and watches their mention and tweet stream, firing actions for each mention or tweet.
 
@@ -15,6 +15,13 @@ This plugin will do NOTHING unless hook the actions, you can think of it as infr
 
 
 == Changelog ==
+
+= 0.3 =
+
+Friday 21 September 2012
+
+* BUGFIX: Remove test hook.
+* ENHANCEMENT: Get 100 tweets in a request.
 
 = 0.2 =
 

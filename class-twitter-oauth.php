@@ -34,7 +34,7 @@ class TwtWchrOAuth {
 	}
 	
 	function get_tweets( $user_id, $override_params = array() ) {
-		// http://api.twitter.com/1/statuses/mentions.json
+		// https://api.twitter.com/1/statuses/user_timeline.json
 		
 		if ( ! $user = $this->get_user( $user_id ) )
 			return new WP_Error( 'twtwchr_twitter_error', __( 'No user exists for that User ID. (Error 200)', 'twtwchr' ) );
