@@ -16,6 +16,15 @@ This plugin will do NOTHING unless hook the actions, you can think of it as infr
 
 == Changelog ==
 
+= 0.4 =
+
+Tuesday 25 September 2012
+
+* ENHANCEMENT: Allow admin to set different last tweet and last mention IDs.
+* ENHANCEMENT: Require POST request to unauthenticate user.
+* ENHANCEMENT: Introduce sanitise_id_str method to sanitise Twitter IDs while avoiding casting to integers (which corrupts data on 32 bit systems).
+* BUGFIX: Remove stray var_dump.
+
 = 0.3 =
 
 Friday 21 September 2012
