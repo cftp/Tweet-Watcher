@@ -2,6 +2,12 @@ ul.twtwchr-users li {
 	margin-bottom: 1em;
 }
 
-p.twtwchr-auth {
-	margin-top: 5em;
+.settings_page_twtwchr_auth input.delete {
+	color: #900;
+	border-color: #900;
+}
+
+.settings_page_twtwchr_auth input.delete:hover {
+	color: #f00;
+	border-color: #f00;
 }

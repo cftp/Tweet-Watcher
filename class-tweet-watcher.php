@@ -151,7 +151,7 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	public function admin_init() {
 		$this->maybe_upgrade();
 		// A line to test queuing mentions on every admin page load
-		$this->queue_new_tweets();
+//		$this->queue_new_tweets();
 		// Handy couple of lines to reset all the tweet collection
 //		$this->init_oauth();
 //		$this->oauth->delete_property( 'last_mention_id' );
@@ -180,15 +180,35 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	public function load_settings() {
 		wp_enqueue_style( 'twtwchr-admin', $this->url( '/css/admin.css' ), array(), $this->version );
 		$this->init_oauth();
-		if ( isset( $_GET[ 'twtwchr_unauthenticate' ] ) ) {
-			$user_id = absint( $_GET[ 'user_id' ] );
-			check_admin_referer( "twtwchr_unauth_$user_id" );
+		
+		if ( isset( $_POST[ '_cftp_twtwchr_nonce_field' ] ) )
+			check_admin_referer ( 'twtwchr_user_change', '_cftp_twtwchr_nonce_field' );
+		
+		// Request to change last tweet and last mention IDs
+		if ( isset( $_POST[ 'last_tweet_id' ] ) ) {
+			$users = $this->oauth->get_users();
+			foreach ( $_POST[ 'last_tweet_id' ] as $user_id => $value ) {
+				$this->oauth->set_user_property( $user_id, 'last_tweet_id', $this->sanitise_id_str( $_POST[ 'last_tweet_id' ][ $user_id ] ) );
+				$this->oauth->set_user_property( $user_id, 'last_mention_id', $this->sanitise_id_str( $_POST[ 'last_mention_id' ][ $user_id ] ) );
+			}
+			$this->set_admin_notice( __( 'The ID change has been saved.', 'twtwchr' ) );
+			wp_redirect( admin_url( 'options-general.php?page=twtwchr_auth&twtwchr_user_deleted=1' ) );
+			exit;
+		}
+
+		// De-auth a particular user
+		if ( isset( $_POST[ '_twtwchr_unauth_nonce_field' ] ) ) {
+			$user_id = absint( $_POST[ 'user_id' ] );
+			check_admin_referer ( "twtwchr_user_unauth_$user_id", '_twtwchr_unauth_nonce_field' );
 			$user = $this->oauth->get_user( $user_id );
 			$this->oauth->delete_user( $user_id );
 			$this->set_admin_notice( sprintf( __( 'The user @%s has been unauthenticated and their tweets are no longer being watched.', 'twtwchr' ), $user[ 'screen_name' ] ) );
 			wp_redirect( admin_url( 'options-general.php?page=twtwchr_auth&twtwchr_user_deleted=1' ) );
 			exit;
-		} elseif ( isset( $_GET[ 'twtwchr_authenticate' ] ) ) {
+		}
+		
+		// Part of the oAuth process
+		if ( isset( $_GET[ 'twtwchr_authenticate' ] ) ) {
 			check_admin_referer( 'twtwchr_auth' );
 			$this->oauth->delete_auth_properties();
 			$response = $this->oauth->acquire_request_token();
@@ -259,15 +279,22 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 	
 	public function settings() {
 		$vars = array();
-		$vars[ 'users' ] = $this->oauth->get_users();
-		foreach ( $vars[ 'users' ] as $user_id => & $user ) {
-			$unauth_args = array( 'twtwchr_unauthenticate' => 1, 'user_id' => $user_id );
-			$unauth_url = add_query_arg( $unauth_args );
-			$unauth_url = wp_nonce_url( $unauth_url, "twtwchr_unauth_$user_id" );
-			$user[ 'unauth_url' ] = $unauth_url;
+		if ( isset( $_GET[ 'twtwchr_unauthenticate' ] ) ) {
+			$user_id_str = absint( $_GET[ 'user_id' ] );
+			$vars[ 'unauthenticate_user_id' ] = $_GET[ 'twtwchr_unauthenticate' ];
+			$vars[ 'user_id' ] = $user_id_str;
+			$vars[ 'user' ] = $this->oauth->get_user( $user_id_str );
+			$this->render_admin( 'confirm-unauthenticate.php', $vars );
+		} else {
+			$vars[ 'users' ] = $this->oauth->get_users();
+			foreach ( $vars[ 'users' ] as $user_id => & $user ) {
+				$unauth_args = array( 'twtwchr_unauthenticate' => 1, 'user_id' => $user_id );
+				$unauth_url = add_query_arg( $unauth_args );
+				$user[ 'unauth_url' ] = $unauth_url;
+			}
+			$vars[ 'auth_url' ] = wp_nonce_url( add_query_arg( array( 'twtwchr_authenticate' => 1 ) ), 'twtwchr_auth' );
+			$this->render_admin( 'settings.php', $vars );
 		}
-		$vars[ 'auth_url' ] = wp_nonce_url( add_query_arg( array( 'twtwchr_authenticate' => 1 ) ), 'twtwchr_auth' );
-		$this->render_admin( 'settings.php', $vars );
 	}
 
 	// UTILITIES
@@ -378,6 +405,19 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 			return;
 		require_once( 'class-twitter-oauth.php' );
 		$this->oauth = new TwtWchrOAuth;
+	}
+	
+	/**
+	 * We cannot sanitise some ID strings by converting to integers, as 
+	 * they will overflow 32 bit systems and corrupt data. This method
+	 * sanitises without converting to ints.
+	 * 
+	 * @param string $id_str An integer ID represented as a string to be sanitised
+	 * @return string A sanitised integer ID 
+	 */
+	public function sanitise_id_str( $id_str ) {
+		$id_str = preg_replace( '/[^\d]/', '', (string) $id_str );
+		return $id_str;
 	}
 	
 	/**
