@@ -234,7 +234,7 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 		
 		foreach ( $users as $user_id => & $user ) {
 			$args = array( 'include_entities' => 'true', 'count' => 100 );
-			if ( isset( $user[ 'last_mention_id' ] ) ) {
+			if ( isset( $user[ 'last_mention_id' ] ) && $user[ 'last_mention_id' ] ) {
 				$args[ 'since_id' ] = $user[ 'last_mention_id' ];
 			}
 			if ( $mentions = $this->oauth->get_mentions( $user_id, $args ) ) {
@@ -259,7 +259,7 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 		
 		foreach ( $users as $user_id => & $user ) {
 			$args = array( 'include_entities' => 'true', 'include_rts' => 'true', 'contributor_details' => 'true', 'count' => 100 );
-			if ( isset( $user[ 'last_tweet_id' ] ) ) {
+			if ( isset( $user[ 'last_tweet_id' ] ) && $user[ 'last_tweet_id' ] ) {
 				$args[ 'since_id' ] = $user[ 'last_tweet_id' ];
 			}
 			if ( $mentions = $this->oauth->get_tweets( $user_id, $args ) ) {
