@@ -16,6 +16,13 @@ This plugin will do NOTHING unless hook the actions, you can think of it as infr
 
 == Changelog ==
 
+= 0.6 =
+
+Wednesday 5 December 2012
+
+* BUGFIX: Don't set `since_id` if it's not available, as Twitter will object
+* FIDDLING: Rename `$mention` to `$tweet` when talking about tweets not mentions
+
 = 0.5 =
 
 Wednesday 5 December 2012
