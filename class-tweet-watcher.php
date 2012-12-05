@@ -240,6 +240,7 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 			if ( $mentions = $this->oauth->get_mentions( $user_id, $args ) ) {
 				$queued_mentions = (array) get_option( 'twtwchr_queued_mentions', array() );
 				foreach ( $mentions as & $mention ) {
+					// error_log( "TW: Queue $mention->id_str" );
 					array_unshift( $queued_mentions, $mention );
 				}
 				update_option( 'twtwchr_queued_mentions', $queued_mentions );
