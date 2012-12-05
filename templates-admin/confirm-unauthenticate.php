@@ -8,8 +8,7 @@
 	<p>Note that the restrictions registered for this plugin with Twitter mean that it can only read your tweets and mentions, and see your followers, it cannot tweet on your behalf or see DMs.</p>
 
 	<form action="" method="post">
-		<?php wp_nonce_field( "twtwchr_user_unauth_$user_id", '_twtwchr_unauth_nonce_field' ); 	error_log( "CHECK twtwchr_user_unauth_$user_id" );
- ?>
+		<?php wp_nonce_field( "twtwchr_user_unauth_$user_id", '_twtwchr_unauth_nonce_field' ); ?>
 		<input type="hidden" name="user_id" value="<?php echo esc_attr( $user_id ); ?>" />
 
 		<p>

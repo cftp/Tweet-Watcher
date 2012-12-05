@@ -54,6 +54,28 @@ class TwtWchrOAuth {
 		return json_decode( wp_remote_retrieve_body( $response ) );
 	}
 	
+	function get_tweet_as_user( $user_id, $tweet_id_str, $override_params = array() ) {
+		// https://api.twitter.com/1/statuses/show.json?id=XXX
+		
+		if ( ! $user = $this->get_user( $user_id ) )
+			return new WP_Error( 'twtwchr_twitter_error', __( 'No user exists for that User ID. (Error 200)', 'twtwchr' ) );
+
+		$params = array();
+		$params['id'] = $tweet_id_str;
+		$params['user_id'] = $user_id;
+		$params['oauth_consumer_key'] = $this->oauth_consumer_key;
+		$params['oauth_nonce'] = $this->get_nonce();
+		$params['oauth_signature_method'] = 'HMAC-SHA1';
+		$params['oauth_timestamp'] = time() + $this->oauth_time_offset;
+		$params['oauth_token'] = $user[ 'oauth_token' ];
+		$params['oauth_version'] = '1.0';
+		
+		$params = array_merge( $params, $override_params );
+		
+		$response = $this->do_oauth( 'https://api.twitter.com/1/statuses/show.json', 'GET', $params, $user[ 'oauth_token_secret' ] );
+		return json_decode( wp_remote_retrieve_body( $response ) );
+	}
+	
 //	function get_profile_image( $screen_name, $vars ) {
 //		// https://api.twitter.com/1/users/profile_image
 //		$params = array();
@@ -234,11 +256,17 @@ class TwtWchrOAuth {
 		$users = $this->get_property( 'users', array() );
 		if ( ! isset( $users[ $user_id ] ) )
 			return false;
+		$user = & $users[ $user_id ][ 'last_tweet_id' ];
 		return $users[ $user_id ];
 	}
 	
 	function get_users() {
-		return $this->get_property( 'users', array() );
+		$users = $this->get_property( 'users', array() );
+		foreach ( $users as & $user ) {
+			$user[ 'last_tweet_id' ] = isset( $user[ 'last_tweet_id' ] ) ? $user[ 'last_tweet_id' ] : null;
+			$user[ 'last_mention_id' ] = isset( $user[ 'last_mention_id' ] ) ? $user[ 'last_mention_id' ] : null;
+		}
+		return $users;
 	}
 	
 	function delete_user( $user_id ) {
