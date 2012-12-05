@@ -262,13 +262,13 @@ class CFTP_Tweet_Watcher extends CFTP_Tweet_Watcher_Plugin {
 			if ( isset( $user[ 'last_tweet_id' ] ) && $user[ 'last_tweet_id' ] ) {
 				$args[ 'since_id' ] = $user[ 'last_tweet_id' ];
 			}
-			if ( $mentions = $this->oauth->get_tweets( $user_id, $args ) ) {
+			if ( $tweets = $this->oauth->get_tweets( $user_id, $args ) ) {
 				$queued_tweets = (array) get_option( 'twtwchr_queued_tweets', array() );
-				foreach ( $mentions as & $mention ) {
-					array_unshift( $queued_tweets, $mention );
+				foreach ( $tweets as & $tweet ) {
+					array_unshift( $queued_tweets, $tweet );
 				}
 				update_option( 'twtwchr_queued_tweets', $queued_tweets );
-				$last_tweet = array_shift( $mentions );
+				$last_tweet = array_shift( $tweets );
 				$this->oauth->set_user_property( $user_id, 'last_tweet_id', $last_tweet->id_str );
 			}
 		}
