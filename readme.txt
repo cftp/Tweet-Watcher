@@ -3,7 +3,7 @@ Contributors: simonwheatley, cftp
 Tags: twitter, tweet
 Requires at least: 3.4.2
 Tested up to: 3.4.2
-Stable tag: 0.3
+Stable tag: 0.5
  
 A WordPress plugin which authenticates with a number of Twitter accounts and watches their mention and tweet stream, firing actions for each mention or tweet.
 
@@ -15,6 +15,20 @@ This plugin will do NOTHING unless hook the actions, you can think of it as infr
 
 
 == Changelog ==
+
+= 0.6 =
+
+Wednesday 5 December 2012
+
+* BUGFIX: Don't set `since_id` if it's not available, as Twitter will object
+* FIDDLING: Rename `$mention` to `$tweet` when talking about tweets not mentions
+
+= 0.5 =
+
+Wednesday 5 December 2012
+
+* BUGFIX: Removed some PHP notices from settings page for unset indexes on the $user array
+* BUGFIX: Remove stray error_log call.
 
 = 0.4 =
 
