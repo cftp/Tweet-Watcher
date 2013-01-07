@@ -40,7 +40,7 @@
 	
 	<?php endif; ?>
 		
-	<p><a href="<?php echo esc_url( $auth_url ); ?>" class="button button-primary">Authenticate a new acccount</a></p>
+	<p><a href="<?php echo esc_url( $auth_url ); ?>" class="button button-primary">Authenticate a new account</a></p>
 	
 </div>
 
