@@ -29,7 +29,7 @@ class TwtWchrOAuth {
 
 		$params = array_merge( $params, $override_params );
 		
-		$response = $this->do_oauth( 'https://api.twitter.com/1/statuses/mentions.json', 'GET', $params, $user[ 'oauth_token_secret' ] );
+		$response = $this->do_oauth( 'https://api.twitter.com/1.1/statuses/mentions.json', 'GET', $params, $user[ 'oauth_token_secret' ] );
 		return json_decode( wp_remote_retrieve_body( $response ) );
 	}
 	
@@ -50,7 +50,7 @@ class TwtWchrOAuth {
 		
 		$params = array_merge( $params, $override_params );
 		
-		$response = $this->do_oauth( 'https://api.twitter.com/1/statuses/user_timeline.json', 'GET', $params, $user[ 'oauth_token_secret' ] );
+		$response = $this->do_oauth( 'https://api.twitter.com/1.1/statuses/user_timeline.json', 'GET', $params, $user[ 'oauth_token_secret' ] );
 		return json_decode( wp_remote_retrieve_body( $response ) );
 	}
 	
